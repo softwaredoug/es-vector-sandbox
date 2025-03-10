@@ -1,0 +1,57 @@
+import pandas as pd
+import numpy as np
+
+
+def _wands_data_merged():
+    try:
+        products = pd.read_csv('data/WANDS/dataset/product.csv', delimiter='\t')
+        queries = pd.read_csv('data/WANDS/dataset/query.csv', delimiter='\t')
+        labels = pd.read_csv('data/WANDS/dataset/label.csv', delimiter='\t')
+    except FileNotFoundError:
+        msg = ("Please download the WANDS dataset from https://github.com/wayfair/WANDS/" +
+               "and place it in the data folder")
+        raise FileNotFoundError(msg)
+    labels.loc[labels['label'] == 'Exact', 'grade'] = 2
+    labels.loc[labels['label'] == 'Partial', 'grade'] = 1
+    labels.loc[labels['label'] == 'Irrelevant', 'grade'] = 0
+    labels = labels.merge(queries, how='left', on='query_id')
+    labels = labels.merge(products, how='left', on='product_id')
+    return labels
+
+
+def wands_products():
+    return pd.read_csv('data/WANDS/dataset/product.csv', delimiter='\t')
+
+
+def pairwise_df(n, seed=42, filter_same_label=False):
+    labels = _wands_data_merged()
+
+    # Sample n rows
+    labels = labels.sample(10000, random_state=seed)
+
+    # Get pairwise
+    pairwise = labels.merge(labels, on='query_id')
+    # Shuffle completely, otherwise they're somewhat sorted on query
+    pairwise = pairwise.sample(frac=1, random_state=seed)
+
+    # Drop same id
+    pairwise = pairwise[pairwise['product_id_x'] != pairwise['product_id_y']]
+
+    # Drop same rating
+    if filter_same_label:
+        pairwise = pairwise[pairwise['label_x'] != pairwise['label_y']]
+
+    assert n <= len(pairwise), f"Only {len(pairwise)} rows available"
+    return pairwise.head(n)
+
+
+def queries_sample(num_queries=100, num_docs=10, seed=420):
+    np.random.seed(seed)
+    labels = _wands_data_merged()
+    queries = labels['query'].unique()
+    queries = np.random.choice(queries, num_queries, replace=False)
+    docs_per_query = labels[labels['query'].isin(queries)]
+    # Shuffle randomly
+    docs_per_query = docs_per_query.sample(frac=1, random_state=seed)
+    docs_per_query = labels.groupby('query').head(num_docs).reset_index(drop=True)
+    return docs_per_query

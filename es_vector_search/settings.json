@@ -1,0 +1,61 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  },
+  "mappings": {
+    "properties": {
+      "product_name": {
+        "type": "text",
+        "fields": {
+          "en": {
+            "type": "text",
+            "analyzer": "english"
+          },
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "product_description": {
+        "type": "text",
+        "fields": {
+          "en": {
+            "type": "text",
+            "analyzer": "english"
+          },
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "product_category": {
+        "type": "text",
+        "fields": {
+          "en": {
+            "type": "text",
+            "analyzer": "english"
+          },
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "product_class": {
+        "type": "text",
+        "fields": {
+          "en": {
+            "type": "text",
+            "analyzer": "english"
+          },
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}
+
