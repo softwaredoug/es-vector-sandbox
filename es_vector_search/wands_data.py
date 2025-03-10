@@ -1,16 +1,32 @@
 import pandas as pd
 import numpy as np
+import tarfile
+import os
+
+
+UNZIPPED_DIR = os.path.expanduser('~/.wands')
+
+os.makedirs(UNZIPPED_DIR, exist_ok=True)
+
+PRODUCTS_FILE = os.path.join(UNZIPPED_DIR, 'dataset/product.csv')
+QUERIES_FILE = os.path.join(UNZIPPED_DIR, 'dataset/query.csv')
+LABELS_FILE = os.path.join(UNZIPPED_DIR, 'dataset/label.csv')
+
+
+def unzip_wands_dataset():
+    """Untar/unzip wands dataset ta data/WANDS/dataset.tar.gz."""
+    if os.path.exists(PRODUCTS_FILE):
+        return
+    path = 'data/WANDS/dataset.tar.gz'
+    with tarfile.open(path, 'r:gz') as tar:
+        tar.extractall(UNZIPPED_DIR)
 
 
 def _wands_data_merged():
-    try:
-        products = pd.read_csv('data/WANDS/dataset/product.csv', delimiter='\t')
-        queries = pd.read_csv('data/WANDS/dataset/query.csv', delimiter='\t')
-        labels = pd.read_csv('data/WANDS/dataset/label.csv', delimiter='\t')
-    except FileNotFoundError:
-        msg = ("Please download the WANDS dataset from https://github.com/wayfair/WANDS/" +
-               "and place it in the data folder")
-        raise FileNotFoundError(msg)
+    unzip_wands_dataset()
+    products = pd.read_csv(PRODUCTS_FILE, delimiter='\t')
+    queries = pd.read_csv(QUERIES_FILE, delimiter='\t')
+    labels = pd.read_csv(LABELS_FILE, delimiter='\t')
     labels.loc[labels['label'] == 'Exact', 'grade'] = 2
     labels.loc[labels['label'] == 'Partial', 'grade'] = 1
     labels.loc[labels['label'] == 'Irrelevant', 'grade'] = 0
@@ -20,7 +36,8 @@ def _wands_data_merged():
 
 
 def wands_products():
-    return pd.read_csv('data/WANDS/dataset/product.csv', delimiter='\t')
+    unzip_wands_dataset()
+    return pd.read_csv(PRODUCTS_FILE, delimiter='\t')
 
 
 def pairwise_df(n, seed=42, filter_same_label=False):
