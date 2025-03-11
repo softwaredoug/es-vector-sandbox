@@ -14,7 +14,7 @@ def unique_product_classes():
 
 
 def search(es: Elasticsearch, query: str, method: int,
-           min_score, threshold, rate, delta):
+           threshold, rate, delta):
     embedder = TextEmbedder(model_name="sentence-transformers/all-MiniLM-L6-v2")
     print(f"Query: {query}")
     query_vector = embedder([query])[0]
@@ -44,8 +44,8 @@ def search(es: Elasticsearch, query: str, method: int,
                 },
             }
         },
-        "min_score": min_score,
-        "size": 400
+        "min_score": threshold,
+        "size": 4000
     }
     hits = es.search(index="wands_products", body=body)
     return hits
@@ -105,6 +105,12 @@ item_type_classes = ['Beds', 'Vanities', 'Sofas', 'Bookcases', 'Desks', 'Ottoman
                      'Slides', 'Mobiles', 'Grab Bars', 'Wallpaper', 'Mantels', 'Lockers', 'Pot Racks', 'Deadbolts',
                      'Wedding', 'Drains', 'Beer Pong', 'Rug Pads', 'Trellises', 'Steam', 'Ranges', 'Ramps',
                      'Hooks', 'Teen Beds', 'Globes', 'Bidets']
+#
+# Best -- f1 21.95914490677431 rate: 10.337777461179622, threshold: 0.455822073094613, delta:
+# 0.4806703818358925, min_score: 0.44582550638546864
+#Best f1: 21.95914490677431
+#Best parameters: rate: 10.337777461179622, threshold: 0.455822073094613, delta: 0.480670381
+# 8358925, min_score: 0.44582550638546864
 
 
 def benchmark_classes(method: int):
@@ -113,7 +119,7 @@ def benchmark_classes(method: int):
     products = wands_products()
     classes = item_type_classes
     print(f"Processing {len(classes)} classes")
-    attempts  = 10
+    attempts  = 50
     max_sum_f1 = 0.0
     best_rate = 0.0
     best_threshold = 0.0
@@ -161,23 +167,34 @@ def benchmark_classes(method: int):
 
 
 if __name__ == "__main__":
-    if argv[1] == "benchmark":
-        benchmark_classes(2)
-        exit(0)
-    else:
-        products = wands_products()
-        classes = item_type_classes
-        search_class = classes[int(argv[1])]
-        num_with_class = len(products[products['product_class'] == search_class])
-        method = 2
-        results = run_for_query(Elasticsearch("http://localhost:9200"), search_class,
-                                method=method,
-                                num_with_class=num_with_class)
-        if len(results) == 0:
-            print(f"No results for query {search_class}")
-            exit(0)
-        print(pd.DataFrame(results)[[method, 'query', 'product_name', 'product_class']].to_markdown())
-        prec = results[0]['prec']
-        recall = results[0]['recall']
-        f1 = results[0]['f1']
-        print(f"Quiery {search_class} - Method: {method} - prec: {prec}, recall: {recall}, f1: {f1}")
+    query = argv[1]
+    es = Elasticsearch("http://localhost:9200")
+    hits_orig = search(es=es, query=query,
+                       method=0, threshold=0.08, rate=10.0, delta=0.8)
+    hits = search(es=es, query=query,
+                  method=2, threshold=0.08, rate=10.0, delta=0.8)
+    for idx, (hit_orig, hit_logistic) in enumerate(zip(hits_orig['hits']['hits'], hits['hits']['hits'])):
+        assert hit_orig['_source']['product_name'] == hit_logistic['_source']['product_name']
+        print(idx, hit_orig['_source']['product_name'],
+              hit_orig['_score'], hit_logistic['_score'])
+
+#    if argv[1] == "benchmark":
+#        benchmark_classes(2)
+#        exit(0)
+#    else:
+#        products = wands_products()
+#        classes = item_type_classes
+#        search_class = classes[int(argv[1])]
+#        num_with_class = len(products[products['product_class'] == search_class])
+#        method = 2
+#        results = run_for_query(Elasticsearch("http://localhost:9200"), search_class,
+#                                method=method,
+#                                num_with_class=num_with_class)
+#        if len(results) == 0:
+#            print(f"No results for query {search_class}")
+#            exit(0)
+#        print(pd.DataFrame(results)[[method, 'query', 'product_name', 'product_class']].to_markdown())
+#        prec = results[0]['prec']
+#        recall = results[0]['recall']
+#        f1 = results[0]['f1']
+#        print(f"Quiery {search_class} - Method: {method} - prec: {prec}, recall: {recall}, f1: {f1}")
