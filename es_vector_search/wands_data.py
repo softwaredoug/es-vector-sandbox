@@ -35,23 +35,39 @@ def _wands_data_merged():
     return labels
 
 
-def eval_results(results: pd.DataFrame):
+def eval_results(results: pd.DataFrame, at=10):
     """Results are all results every search and will be joined with the labels. and NDCGG computed."""
-    labels = _wands_data_merged()
+    labels = wands_labels()
     results = results.merge(labels, on=['query_id', 'product_id'], how='left')
     results = results.sort_values(['query_id', 'rank'])
     results['dcg'] = results['grade'] / np.log2(results['rank'] + 1)
     # Compute IDCG from labels
     labels = labels.sort_values(['query_id', 'grade'], ascending=False)
     labels['rank'] = labels.groupby('query_id').cumcount() + 1
+    labels = labels[labels['rank'] <= at]
     labels['idcg'] = labels['grade'] / np.log2(labels['rank'] + 1)
-    ndcgs = results.groupby('query_id')['dcg'].sum() / labels.groupby('query_id')['idcg'].sum()
+    results = results[results['rank'] <= at]
+    ndcgs = results.groupby(['query_id', 'query'])['dcg'].sum() / labels.groupby('query_id')['idcg'].sum()
     return ndcgs
+
+
+def wands_labels():
+    unzip_wands_dataset()
+    labels = pd.read_csv(LABELS_FILE, delimiter='\t')
+    labels.loc[labels['label'] == 'Exact', 'grade'] = 2
+    labels.loc[labels['label'] == 'Partial', 'grade'] = 1
+    labels.loc[labels['label'] == 'Irrelevant', 'grade'] = 0
+    return labels.groupby(['query_id', 'product_id']).head(1).reset_index(drop=True)
 
 
 def wands_products():
     unzip_wands_dataset()
     return pd.read_csv(PRODUCTS_FILE, delimiter='\t')
+
+
+def wands_queries():
+    unzip_wands_dataset()
+    return pd.read_csv(QUERIES_FILE, delimiter='\t')
 
 
 def pairwise_df(n, seed=42, filter_same_label=False):

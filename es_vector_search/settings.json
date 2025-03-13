@@ -16,6 +16,24 @@
           "type": "int8_hnsw"
         }
       },
+      "product_description_minilm": {
+        "type": "dense_vector",
+        "dims": 512,
+        "element_type": "float",
+        "index": true,
+        "index_options": {
+          "type": "int8_hnsw"
+        }
+      },
+      "product_name_description_minilm": {
+        "type": "dense_vector",
+        "dims": 512,
+        "element_type": "float",
+        "index": true,
+        "index_options": {
+          "type": "int8_hnsw"
+        }
+      },
       "product_name": {
         "type": "text",
         "fields": {

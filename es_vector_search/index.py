@@ -21,6 +21,7 @@ def wands_products_to_bulk(wands: pd.DataFrame):
     embedder = TextEmbedder(model_name="sentence-transformers/all-MiniLM-L6-v2")
     name_embeddings = embedder(wands['product_name'].values)
     description_embeddings = embedder(wands['product_description'].values)
+    name_with_description_embeddings = embedder(wands['product_name'] + " " + wands['product_description'])
     for idx, row in tqdm(wands.iterrows(), total=count, desc="Indexing WANDS products"):
         yield {
             "_index": "wands_products",
@@ -28,6 +29,7 @@ def wands_products_to_bulk(wands: pd.DataFrame):
             "_source": {
                 "product_name_minilm": name_embeddings[idx].tolist(),
                 "product_description_minilm": description_embeddings[idx].tolist(),
+                "product_name_description_minilm": name_with_description_embeddings[idx].tolist(),
                 "product_name": row['product_name'] if pd.notna(row['product_name']) else "",
                 "product_description": row['product_description'] if pd.notna(row['product_description']) else "",
                 "product_category": row['category hierarchy'] if pd.notna(row['category hierarchy']) else "",
