@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import tarfile
 import os
+from torch.utils.data import Dataset
 
 
 UNZIPPED_DIR = os.path.expanduser('~/.wands')
@@ -102,3 +103,24 @@ def queries_sample(num_queries=100, num_docs=10, seed=420):
     docs_per_query = docs_per_query.sample(frac=1, random_state=seed)
     docs_per_query = labels.groupby('query').head(num_docs).reset_index(drop=True)
     return docs_per_query
+
+
+class WANDSDataset(Dataset):
+    """
+    PyTorch Dataset for the WANDS product search dataset.
+    Produces (query, product_name, product_description, grade).
+    """
+
+    def __init__(self):
+        self.data = _wands_data_merged().reset_index(drop=True)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        row = self.data.iloc[idx]
+        query = row['query']
+        product_name = row['product_title']  # Assuming 'product_title' is the column name for product name
+        product_description = row['product_description']  # Assuming 'product_description' is the column name
+        grade = int(row['grade'])
+        return query, product_name, product_description, grade

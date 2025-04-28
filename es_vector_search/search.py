@@ -254,7 +254,7 @@ def search_all(es: Elasticsearch, search_fn=search_knn, at=10):
             results.append({
                 "query_id": query['query_id'],
                 "query": query['query'],
-                "product_id": int(hit['_id']),
+                "product_id": int(hit['_id'])g,
                 "product_name": hit['_source']['product_name'],
                 "rank": idx + 1,
                 "score": hit['_score']
