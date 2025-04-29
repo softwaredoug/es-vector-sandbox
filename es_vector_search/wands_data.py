@@ -33,6 +33,8 @@ def _wands_data_merged():
     labels.loc[labels['label'] == 'Irrelevant', 'grade'] = 0
     labels = labels.merge(queries, how='left', on='query_id')
     labels = labels.merge(products, how='left', on='product_id')
+    products['product_name'].fillna('', inplace=True)
+    products['product_description'].fillna('', inplace=True)
     return labels
 
 
@@ -120,7 +122,7 @@ class WANDSDataset(Dataset):
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         query = row['query']
-        product_name = row['product_title']  # Assuming 'product_title' is the column name for product name
-        product_description = row['product_description']  # Assuming 'product_description' is the column name
+        product_name = row['product_name'] if not isinstance(row['product_name'], float) else ''
+        product_description = row['product_description'] if not isinstance(row['product_description'], float) else ''
         grade = int(row['grade'])
         return query, product_name, product_description, grade
